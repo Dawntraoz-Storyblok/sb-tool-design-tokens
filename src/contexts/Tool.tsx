@@ -4,7 +4,7 @@ import { useState, createContext, useEffect, ReactNode } from "react";
 
 type ToolContextType = {
   story: ISbStoryData;
-  accessToken: string;
+  currentStory: ISbStoryData;
 };
 
 export const ToolContext = createContext<ToolContextType>(
@@ -12,19 +12,19 @@ export const ToolContext = createContext<ToolContextType>(
 );
 
 type Props = {
-  accessToken: string;
+  story: ISbStoryData;
   children: ReactNode;
 };
 
-export const ToolProvider = ({ accessToken, children }: Props) => {
-  const [story, setStory] = useState();
+export const ToolProvider = ({ story, children }: Props) => {
+  const [currentStory, setCurrentStory] = useState();
 
   useEffect(() => {
     window.addEventListener(
       "message",
       (event) => {
         if (event.data.action === "get-context") {
-          setStory(event.data.story);
+          setCurrentStory(event.data.story);
         }
       },
       false
@@ -40,8 +40,8 @@ export const ToolProvider = ({ accessToken, children }: Props) => {
     );
   }, []);
 
-  return story ? (
-    <ToolContext.Provider value={{ story, accessToken }}>
+  return currentStory ? (
+    <ToolContext.Provider value={{ story, currentStory }}>
       {children}
     </ToolContext.Provider>
   ) : null;
