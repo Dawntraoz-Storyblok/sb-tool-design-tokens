@@ -1,9 +1,8 @@
 import { NextApiHandler } from 'next';
 import { authParams } from '@/auth';
 import { APP_ID } from "@/config";
-import { ToolSpaceSettings } from '@/types';
+import { SchemaOptions, ToolSpaceSettings } from '@/types';
 
-import type { ISbStoryData } from "storyblok-js-client";
 import StoryblokClient from 'storyblok-js-client';
 import {
   isAppSessionQuery,
@@ -11,7 +10,7 @@ import {
   sessionCookieStore,
 } from '@storyblok/app-extension-auth';
 
-const handle: NextApiHandler<ISbStoryData> = async (req, res) => {
+const handle: NextApiHandler<SchemaOptions> = async (req, res) => {
   try {
     const { query } = req
 
@@ -39,16 +38,20 @@ const handle: NextApiHandler<ISbStoryData> = async (req, res) => {
       return
     }
 
-    // Fetch the story that contains the entire site configuration
-    const story = await fetchStory(accessToken, region, spaceId, toolSpaceSettings.story_id)
+    // Fetch the content type schema that contains the entire site configuration
+    const contentTypeSchema = await getContentTypeSchema(accessToken, region, spaceId, toolSpaceSettings.content_type)
 
-    if (story instanceof Error) {
-      console.error(story)
+    if (contentTypeSchema instanceof Error) {
+      console.error(contentTypeSchema)
       res.status(500).end()
       return
     }
 
-    res.json(story)
+    const brandColors = contentTypeSchema.schema.color.options.filter((option: any) => option.name === "colors")[0].value;
+
+    res.json({
+      colors: brandColors,
+    })
     return
   } catch (error) {
     // Should not happen
@@ -69,18 +72,35 @@ const getSpaceSettings = (
     .then((res) => res.data.app_provision.space_level_settings)
     .catch((error) => error)
 
-const fetchStory = (
+type ContentTypeSchema = {
+  name: string,
+  display_name?: string,
+  created_at: string,
+  updated_at: string,
+  id: number,
+  schema: any,
+  image?: string,
+  preview_field?: string,
+  is_root: boolean,
+  preview_tmpl?: string,
+  is_nestable: boolean,
+  all_presets: any[],
+  real_name: string,
+  component_group_uuid?: string
+};
+
+const getContentTypeSchema = (
   accessToken: string,
   region: Region,
   spaceId: number,
-  storyId: string
-): Promise<ISbStoryData | Error> =>
+  contentType: string
+): Promise<ContentTypeSchema | Error> =>
   new StoryblokClient({
     oauthToken: `Bearer ${accessToken}`,
     region,
   })
-    .get(`spaces/${spaceId}/stories/${storyId}`)
-    .then((res) => res.data.story as ISbStoryData)
+    .get(`spaces/${spaceId}/components`)
+    .then((res) => res.data.components.filter((component: ContentTypeSchema) => component.name === contentType)[0])
     .catch((error) => error)
 
 export default handle

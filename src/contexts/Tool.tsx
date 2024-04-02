@@ -1,9 +1,11 @@
-import { APP_ORIGIN, TOOL_ID } from "@/config";
-import type { ISbStoryData } from "storyblok-js-client";
 import { useState, createContext, useEffect, ReactNode } from "react";
+import type { ISbStoryData } from "storyblok-js-client";
+import { APP_ORIGIN, TOOL_ID } from "@/config";
+import { SchemaOptions } from "@/types";
 
 type ToolContextType = {
   story: ISbStoryData;
+  schema: SchemaOptions;
   currentStory: ISbStoryData;
 };
 
@@ -13,10 +15,11 @@ export const ToolContext = createContext<ToolContextType>(
 
 type Props = {
   story: ISbStoryData;
+  schema: SchemaOptions;
   children: ReactNode;
 };
 
-export const ToolProvider = ({ story, children }: Props) => {
+export const ToolProvider = ({ story, schema, children }: Props) => {
   const [currentStory, setCurrentStory] = useState();
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export const ToolProvider = ({ story, children }: Props) => {
   }, []);
 
   return currentStory ? (
-    <ToolContext.Provider value={{ story, currentStory }}>
+    <ToolContext.Provider value={{ story, currentStory, schema }}>
       {children}
     </ToolContext.Provider>
   ) : null;
